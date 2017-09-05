@@ -1,5 +1,13 @@
 set.seed(12345)
 
+# testpca <- function(X){
+#   cent <- sweep(X,2,colMeans(X),FUN="-")
+#   eigenvec <- eigen(cov(cent))$vectors
+#   S <- cent %*% eigenvec
+#   L <- list("A"= S, "B" =eigenvec)
+#   return(L)
+# }
+
 w <- 30
 h <- 90
 n <- h*w
