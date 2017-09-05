@@ -1,4 +1,5 @@
 require(JADE)
+require(clue)
 
 frobnorm <- function(X){
   # crossprod(Conj(Z.matrix),Z.matrix) = Conj(t(Z.matrix)) %*% Z.matrix
@@ -147,12 +148,17 @@ NSOBI <- function(D,taus,method="cjd", eps = 1e-06, maxiter = 100, ...){
                  frjd(autocovmatarray, eps=eps, maxiter=maxiter,...)$V
                }
   )
-  G<- crossprod(Conj(U2),COV.sqrt.i)
-  DT <- Z %*% Conj(U2)
+  G<- crossprod(U2,COV.sqrt.i)
+  
+  DT <- Z %*% U2
   L <- list(Gamma=G,Data=DT)
   return(L)
 }
 
-
-
+# 
+# JD <- cjd(R,eps=eps,maxiter=maxiter)$V
+# W <- COV.sqrt.i %*% Conj(JD)
+# 
+# 
+# DT <- Y %*% JD
 
