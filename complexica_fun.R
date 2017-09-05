@@ -1,11 +1,9 @@
+require(JADE)
 
 frobnorm <- function(X){
   # crossprod(Conj(Z.matrix),Z.matrix) = Conj(t(Z.matrix)) %*% Z.matrix
   tmp <- sqrt(sum(diag(tcrossprod(X,Conj(X)))))
-  #I like to add these parts for myself just to make sure that there is not too much computational error
-  if(sum(Im(tmp))>1e-14){ 
-    print("Error in frobnorm")
-  }
+
   return(Re(tmp))
 }
 
@@ -85,8 +83,7 @@ NAMUSE <- function(D,t){
   cent <- sweep(D,2,colMeans(D),"-")
   S1 <- cov1(D)
   COV.sqrt.i <- solve(msqrt(S1))
-  #Cov is affine equivariant, lose less precision
-  # when calculated from original
+
   Z <- tcrossprod(cent,COV.sqrt.i) #whitening
   S2 <- acov(Z,t)
   U2 <- eigen(S2,symmetric=TRUE)$vectors
@@ -104,8 +101,7 @@ NFOBI <- function(D){
   cent <- sweep(D,2,colMeans(D),"-")
   S1 <- cov1(D)
   COV.sqrt.i <- solve(msqrt(S1))
-  #Cov is affine equivariant, lose less precision
-  # when calculated from original
+
   Z <- tcrossprod(cent,COV.sqrt.i) #whitening
   S2 <- cov2(Z)
   U2 <- eigen(S2,symmetric=TRUE)$vectors
@@ -115,18 +111,42 @@ NFOBI <- function(D){
   return(L)
 }
 
-NSOBI <- function(D){
+NSOBI <- function(D,taus,method="cjd", eps = 1e-06, maxiter = 100, ...){
   #return the gamma matrix estimate
+  if (length(taus)==1) taus <- 1:taus 
+  nt <- length(taus)
+  method <- match.arg(method, c("cjd","rjd", "djd", "frjd"))
+  
   n <- dim(D)[1]
   p <- dim(D)[2]
   cent <- sweep(D,2,colMeans(D),"-")
   S1 <- cov1(D)
   COV.sqrt.i <- solve(msqrt(S1))
-  #Cov is affine equivariant, lose less precision
-  # when calculated from original
   Z <- tcrossprod(cent,COV.sqrt.i) #whitening
-  S2 <- cov2(Z)
-  U2 <- eigen(S2,symmetric=TRUE)$vectors
+
+  
+  autocovmatarray <- array(NA,dim=c(p,p,nt))
+  for(i in 1:nt){
+    autocovmatarray[,,i] <- acov(Z,i)
+  }
+  
+  U2 <- switch(method,
+               cjd = {
+                 cjd(autocovmatarray, eps = eps, maxiter = maxiter)$V
+               }
+               ,
+               "rjd"={
+                 rjd(autocovmatarray, eps=eps, maxiter=maxiter)$V
+               }
+               ,
+               "djd"={
+                 djd(autocovmatarray, eps=eps, maxiter=maxiter,...)
+               }
+               ,
+               "frjd"={
+                 frjd(autocovmatarray, eps=eps, maxiter=maxiter,...)$V
+               }
+  )
   G<- crossprod(Conj(U2),COV.sqrt.i)
   DT <- Z %*% Conj(U2)
   L <- list(Gamma=G,Data=DT)
